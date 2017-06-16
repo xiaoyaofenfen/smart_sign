@@ -101,10 +101,76 @@ class TSDM:
             'answer': ''
 
         }
-        resp = self.session.post(url='http://www.tsdm.me//member.php?mod=logging&action=login&loginsubmit=yes&loginhash={0}&inajax=1'.format(loginhash),
+        resp = self.session.post(url='http://www.tsdm.me/member.php?mod=logging&action=login&loginsubmit=yes&loginhash={0}&inajax=1'.format(loginhash),
                            headers=headersForLogin,
                            data=formData)
+        print(resp.content.decode(resp.encoding))
         return resp.status_code == 200
+
+    def dailySign(self):
+        headersForHomePage = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/537.36 '
+                                            '(KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36',
+                              'Host': 'www.tsdm.me',
+                              'Upgrade-Insecure-Requests': '1',
+                              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                              'Accept-Encoding': 'gzip, deflate, sdch',
+                              'Accept-Language': 'zh-CN,zh;q=0.8',
+                              'Referer': 'http://www.tsdm.me/member.php?mod=logging&action=login'
+                              }
+        resp = self.session.get(url='http://www.tsdm.me/',
+                                headers=headersForHomePage)
+        html = ''
+        if resp.status_code == 200:
+            html = resp.content.decode(resp.encoding)
+
+        if len(html) == 0:
+            return False
+
+        formHash = ''
+        formhashPattern = re.compile('<input type="hidden" name="formhash" value="([0-9a-zA-Z]+)" />')
+        lines = html.split('\n')
+        for line in lines:
+            if len(line) == 0:
+                continue
+            line = line.strip()
+            if len(line) == 0:
+                continue
+
+            match = formhashPattern.match(line)
+            if match:
+                formHash = match.group(1)
+                break
+
+        if len(formHash) == 0:
+            return False
+
+        # sign
+        headersForDailySign = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/537.36 '
+                                         '(KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36',
+                               'Host': 'www.tsdm.me',
+                           'Origin': 'http://www.tsdm.me',
+                           'Referer': 'http://www.tsdm.me/',
+                           'Upgrade-Insecure-Requests': '1',
+                           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                           'Accept-Encoding': 'gzip, deflate, sdch',
+                           'Accept-Language': 'zh-CN,zh;q=0.8',
+                           'Content-Type': 'application/x-www-form-urlencoded'
+                           }
+        formData = {
+            'formhash': formHash,
+            'qdxq': 'kx',
+            'qdmode': 1,
+            'todaysay': 'today happy',
+            'fastreply': 1
+        }
+        resp = self.session.post(
+            url='http://www.tsdm.me/plugin.php?id=dsu_paulsign:sign&operation=qiandao&infloat=1&sign_as=1&inajax=1',
+            headers=headersForDailySign,
+            data=formData)
+        if resp.status_code == 200:
+            print(resp.content.decode(resp.encoding))
+            return True
+        return False
 
 if __name__ == '__main__':
     tsdm = TSDM()
