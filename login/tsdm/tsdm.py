@@ -5,10 +5,9 @@ import requests
 import execjs
 import rsa
 import base64
-import pytesseract
-from PIL import Image
 import re
-
+import platform
+import os
 
 class TSDM:
     session = requests.session()
@@ -39,6 +38,17 @@ class TSDM:
         else:
             return False
         return True
+
+    def getCaptchaStringManual(self):
+        self.getCaptcahImage(
+            'captcha.jpg')
+        if platform.system() == 'Darwin':  # macOS
+            os.system('open captcha.jpg')
+        elif platform.system() == 'Windows':  # windows
+            os.system('explorer captcha.jpg')
+
+        captcha = input('captcah from picture: ')
+        return captcha
 
     def getLoginHomePage(self):
         headersForHomePage = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/537.36 '
@@ -98,14 +108,17 @@ class TSDM:
             'password': password,
             'tsdm_verify': captcha,
             'questionid': 0,
-            'answer': ''
+            'answer': '',
+            'cookietime': 2592000
 
         }
         resp = self.session.post(url='http://www.tsdm.me/member.php?mod=logging&action=login&loginsubmit=yes&loginhash={0}&inajax=1'.format(loginhash),
                            headers=headersForLogin,
                            data=formData)
-        print(resp.content.decode(resp.encoding))
-        return resp.status_code == 200
+        if resp.status_code == 200:
+            responseXml = resp.content.decode(resp.encoding)
+            return responseXml.find('欢迎您回来') >= 0
+        return False
 
     def dailySign(self):
         headersForHomePage = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_4) AppleWebKit/537.36 '
@@ -168,9 +181,10 @@ class TSDM:
             headers=headersForDailySign,
             data=formData)
         if resp.status_code == 200:
-            print(resp.content.decode(resp.encoding))
-            return True
+            responseXml = resp.content.decode(resp.encoding)
+            return responseXml.find('您今日已经签到，请明天再来') >= 0 or responseXml.find('您今日已经签到，请明天再来') >= 0
         return False
+
 
 if __name__ == '__main__':
     tsdm = TSDM()
