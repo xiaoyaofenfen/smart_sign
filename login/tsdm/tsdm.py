@@ -182,7 +182,8 @@ class TSDM:
             data=formData)
         if resp.status_code == 200:
             responseXml = resp.content.decode(resp.encoding)
-            return responseXml.find('您今日已经签到，请明天再来') >= 0 or responseXml.find('您今日已经签到，请明天再来') >= 0
+            print(responseXml)
+            return responseXml.find('您今日已经签到') >= 0 or responseXml.find('恭喜你签到成功') >= 0
         return False
 
 
