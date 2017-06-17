@@ -9,6 +9,7 @@ import re
 import platform
 import os
 
+
 class TSDM:
     session = requests.session()
 
